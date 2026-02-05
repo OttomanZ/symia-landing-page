@@ -17828,10 +17828,6 @@
       var pg = data.programs_grants || {};
       var ib = data.intelligence_brief || {};
 
-      // Store PDF report for download
-      window._pdfReport = data.pdf_report || null;
-      window._pdfOrgName = data.organization_name || 'Organization';
-
       var org = data.organization_name || sd.organization_name || 'Organization';
       var orgType = sd.organization_type || '';
       var studentCount = sd.student_count_estimate || '';
@@ -18084,11 +18080,8 @@
         '<div style="font-family:var(--mono);font-size:12px;letter-spacing:4px;color:var(--or);margin-bottom:24px;font-weight:600">NEXT STEPS</div>' +
         '<h3 style="font-family:var(--serif);font-size:clamp(28px,4vw,42px);font-weight:900;color:var(--wh);letter-spacing:-1px;margin-bottom:20px">Ready to Deploy <em style="color:var(--or);font-style:italic">Watchtower?</em></h3>' +
         '<p style="font-family:var(--serif);font-size:18px;color:var(--g4);line-height:1.9;margin-bottom:36px">This brief was generated from publicly available data. A full implementation analysis with your internal systems access reveals 10x more opportunity.</p>' +
-        '<div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">' +
-        (window._pdfReport ? '<a style="font-family:var(--mono);font-size:10px;letter-spacing:4px;text-transform:uppercase;padding:16px 48px;background:#22c55e;color:var(--wh);display:inline-block;cursor:pointer;text-decoration:none" onclick="downloadBriefPDF()">📄 Download PDF</a>' : '') +
-        '<a style="font-family:var(--mono);font-size:10px;letter-spacing:4px;text-transform:uppercase;padding:16px 48px;background:var(--or);color:var(--wh);display:inline-block;cursor:pointer;text-decoration:none" onclick="var ps=document.querySelectorAll(\'.page\');for(var i=0;i<ps.length;i++)ps[i].classList.remove(\'active\');var t=document.getElementById(\'p-contact\');if(t)t.classList.add(\'active\');window.scrollTo(0,0);">Request Full Briefing</a>' +
-        '</div>' +
-        '<a style="font-family:var(--mono);font-size:10px;letter-spacing:4px;text-transform:uppercase;padding:16px 48px;background:transparent;color:var(--g4);display:inline-block;cursor:pointer;text-decoration:none;border:1px solid rgba(255,255,255,.15);margin-top:16px" onclick="resetBrief();document.getElementById(\'intel-brief-section\').scrollIntoView({behavior:\'smooth\'});">Generate New Brief</a>' +
+        '<a style="font-family:var(--mono);font-size:10px;letter-spacing:4px;text-transform:uppercase;padding:16px 48px;background:var(--or);color:var(--wh);display:inline-block;cursor:pointer;text-decoration:none;margin-right:12px" onclick="var ps=document.querySelectorAll(\'.page\');for(var i=0;i<ps.length;i++)ps[i].classList.remove(\'active\');var t=document.getElementById(\'p-contact\');if(t)t.classList.add(\'active\');window.scrollTo(0,0);">Request Full Briefing</a>' +
+        '<a style="font-family:var(--mono);font-size:10px;letter-spacing:4px;text-transform:uppercase;padding:16px 48px;background:transparent;color:var(--g4);display:inline-block;cursor:pointer;text-decoration:none;border:1px solid rgba(255,255,255,.15);margin-top:12px" onclick="resetBrief();document.getElementById(\'intel-brief-section\').scrollIntoView({behavior:\'smooth\'});">Generate New Brief</a>' +
         '</div></div>';
 
       document.getElementById('ib-proposal').innerHTML = proposalHTML;
