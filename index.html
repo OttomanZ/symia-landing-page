@@ -17818,175 +17818,264 @@
 
 
     // ========== INTELLIGENCE BRIEF RENDERER ==========
-    function renderBrief(b, url) {
+    function renderBrief(data, url) {
       document.getElementById('ib-input').style.display = 'none';
       document.getElementById('ib-loading').style.display = 'none';
       document.getElementById('ib-results').style.display = 'block';
 
-      var org = b.organization_name || 'Organization';
-      var painContext = b.pain_context || '';
-      var challenges = b.current_challenges || [];
-      var systems = b.detected_systems || [];
-      var integrations = b.integration_opportunities || [];
-      var products = b.recommended_products || [];
+      // Extract nested objects from new API structure
+      var sd = data.systems_discovery || {};
+      var pg = data.programs_grants || {};
+      var ib = data.intelligence_brief || {};
+
+      var org = data.organization_name || sd.organization_name || 'Organization';
+      var orgType = sd.organization_type || '';
+      var studentCount = sd.student_count_estimate || '';
+      var employeeCount = sd.employee_count_estimate || '';
+      var systems = sd.identified_systems || [];
+      var itLeadership = sd.it_leadership || '';
+      var dataGovNotes = sd.data_governance_notes || '';
+
+      var grants = pg.active_grants || [];
+      var initiatives = pg.strategic_initiatives || [];
+      var painPoints = pg.pain_points_identified || [];
+      var announcements = pg.recent_announcements || [];
+      var accreditation = pg.accreditation_notes || '';
+
+      var execSummary = ib.executive_summary || '';
+      var techMaturity = ib.technology_maturity || 'developing';
+      var dataSilos = ib.data_silos || [];
+      var integrationHealth = ib.current_integration_health || '';
+      var opportunities = ib.integration_opportunities || [];
+      var immediateActions = ib.immediate_actions || [];
+      var shortTermRoadmap = ib.short_term_roadmap || [];
+      var longTermVision = ib.long_term_vision || '';
+      var keyRisks = ib.key_risks || [];
+      var watchtowerFit = ib.watchtower_fit || '';
+      var roiFactors = ib.estimated_roi_factors || [];
+      var changeNotes = ib.change_management_notes || '';
 
       // ─── HEADER (org info) ───
+      var maturityColors = { emerging: '#ef4444', developing: '#f59e0b', established: '#84cc16', advanced: '#22c55e' };
+      var maturityColor = maturityColors[techMaturity] || '#f59e0b';
       var headerHTML =
-        '<div style="display:flex;align-items:center;gap:20px;margin-bottom:32px">' +
+        '<div style="display:flex;align-items:center;gap:20px;margin-bottom:32px;flex-wrap:wrap">' +
         '<div style="width:72px;height:72px;background:var(--or);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:28px;font-weight:700;color:var(--wh)">' + org.charAt(0) + '</div>' +
-        '<div><div style="font-family:var(--serif);font-size:28px;font-weight:900;color:var(--bk)">' + org + '</div>' +
-        '<div style="font-family:var(--mono);font-size:9px;letter-spacing:3px;color:var(--g4);margin-top:4px">INTELLIGENCE BRIEF</div></div>' +
-        '</div>';
+        '<div style="flex:1">' +
+        '<div style="font-family:var(--serif);font-size:28px;font-weight:900;color:var(--bk)">' + org + '</div>' +
+        '<div style="display:flex;gap:12px;align-items:center;margin-top:8px;flex-wrap:wrap">' +
+        (orgType ? '<span style="font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--wh);background:var(--g5);padding:4px 10px">' + orgType.toUpperCase() + '</span>' : '') +
+        '<span style="font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--wh);background:' + maturityColor + ';padding:4px 10px">' + techMaturity.toUpperCase() + '</span>' +
+        (studentCount ? '<span style="font-family:var(--mono);font-size:9px;color:var(--g4)">' + studentCount + ' students</span>' : '') +
+        (employeeCount ? '<span style="font-family:var(--mono);font-size:9px;color:var(--g4)">' + employeeCount + ' employees</span>' : '') +
+        '</div></div></div>';
 
       document.getElementById('ib-org-info').innerHTML = headerHTML;
 
-      // ─── EXECUTIVE SUMMARY (Wire editorial) ───
+      // ─── EXECUTIVE SUMMARY ───
       var proposalHTML =
         '<div style="background:var(--lt);padding:60px 48px">' +
         '<div style="max-width:900px;margin:0 auto">' +
-        painContext +
-        '<div style="font-family:var(--mono);font-size:8px;letter-spacing:4px;color:var(--or);margin-bottom:16px">EXECUTIVE SUMMARY</div>' +
-        '<div style="height:1px;background:rgba(10,10,10,.1);margin-bottom:32px"></div>' +
-        '<p style="font-family:var(--serif);font-size:19px;line-height:1.8;color:var(--bk);margin-bottom:0">' + (b.executive_summary || 'Based on publicly available information, this organization operates in a workforce ecosystem requiring continuous coordination between enrollment systems, program delivery, compliance reporting, and outcome tracking.') + '</p>' +
+        '<div style="font-family:var(--mono);font-size:11px;letter-spacing:4px;color:var(--or);margin-bottom:20px;font-weight:600">EXECUTIVE SUMMARY</div>' +
+        '<div style="height:2px;background:rgba(185,28,28,.2);margin-bottom:36px"></div>' +
+        '<p style="font-family:var(--serif);font-size:22px;line-height:2;color:var(--bk);margin-bottom:0">' + (execSummary || 'Based on publicly available information, this organization operates in a complex data ecosystem requiring continuous coordination between multiple systems.') + '</p>' +
         '</div></div>' +
 
-        // ─── CHALLENGES (dark section with visual cards) ───
-        '<div style="background:var(--bk);padding:60px 24px">' +
-        '<div style="max-width:1400px;margin:0 auto">' +
-        '<div style="font-family:var(--mono);font-size:8px;letter-spacing:5px;color:var(--or);margin-bottom:16px;text-align:center">IDENTIFIED CHALLENGES</div>' +
-        '<div style="height:1px;background:rgba(255,255,255,.06);margin-bottom:40px"></div>' +
-        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:1px;background:rgba(255,255,255,.04)">' +
-        challenges.map(function (c, i) {
-          var svgIcons = [
-            '<svg viewBox="0 0 340 50" xmlns="http://www.w3.org/2000/svg" fill="none"><rect width="340" height="50" fill="#0A0A0A"/><circle cx="25" cy="25" r="12" fill="rgba(185,28,28,.06)" stroke="rgba(185,28,28,.3)" stroke-width="1"/><text x="25" y="29" text-anchor="middle" fill="#B91C1C" font-size="8" font-weight="700">' + (i + 1 < 10 ? "0" : "") + (i + 1) + '</text><line x1="42" y1="25" x2="60" y2="25" stroke="rgba(185,28,28,.2)" stroke-width="1"/><rect x="65" y="12" width="60" height="26" rx="2" fill="rgba(185,28,28,.04)" stroke="rgba(185,28,28,.15)" stroke-width=".5"/><text x="95" y="29" text-anchor="middle" fill="#B91C1C" font-size="5" font-weight="700">FRICTION</text><line x1="130" y1="25" x2="155" y2="25" stroke="rgba(185,28,28,.15)" stroke-width="1" stroke-dasharray="3,2"/><line x1="160" y1="25" x2="185" y2="25" stroke="rgba(185,28,28,.15)" stroke-width="1" stroke-dasharray="3,2"/><line x1="190" y1="25" x2="215" y2="25" stroke="rgba(185,28,28,.15)" stroke-width="1" stroke-dasharray="3,2"/><circle cx="235" cy="25" r="8" fill="rgba(214,158,46,.06)" stroke="rgba(214,158,46,.2)" stroke-width=".5"/><text x="235" y="28" text-anchor="middle" fill="#D69E2E" font-size="6">&#x2713;</text><text x="260" y="28" fill="#6B6862" font-size="5">SOLVABLE</text></svg>'
-          ];
-          return '<div style="background:var(--bk);padding:28px 32px">' +
-            svgIcons[0] +
-            '<p style="font-family:var(--serif);font-size:15px;line-height:1.7;color:var(--g6);margin-top:12px">' + c + '</p>' +
-            '</div>'
-        }).join('') +
-        '</div></div></div>' +
-
-        // ─── DETECTED SYSTEMS → ONTOLOGY MAP (visual diagram) ───
-        (systems.length ?
-          '<div style="background:var(--lt);padding:60px 48px">' +
-          '<div style="max-width:1200px;margin:0 auto">' +
-          '<div style="font-family:var(--mono);font-size:8px;letter-spacing:4px;color:var(--or);margin-bottom:16px">DETECTED SYSTEMS</div>' +
-          '<div style="height:1px;background:rgba(10,10,10,.1);margin-bottom:32px"></div>' +
-          '<svg viewBox="0 0 1000 ' + (Math.max(200, systems.length * 45 + 60)) + '" xmlns="http://www.w3.org/2000/svg" style="font-family:Share Tech Mono,monospace;width:100%;display:block;margin-bottom:24px" fill="none">' +
-          '<rect width="1000" height="' + (Math.max(200, systems.length * 45 + 60)) + '" rx="4" fill="#FAFAF8" stroke="rgba(10,10,10,.08)" stroke-width="1"/>' +
-          systems.map(function (s, i) {
-            var y = 30 + i * 45;
-            return '<rect x="40" y="' + y + '" width="200" height="32" rx="2" fill="rgba(10,10,10,.02)" stroke="rgba(10,10,10,.08)" stroke-width="1"/>' +
-              '<text x="140" y="' + (y + 20) + '" text-anchor="middle" fill="#0A0A0A" font-size="6" font-weight="700" letter-spacing="1">' + s.toUpperCase() + '</text>' +
-              '<line x1="245" y1="' + (y + 16) + '" x2="420" y2="' + (Math.max(200, systems.length * 45 + 60) / 2) + '" stroke="rgba(185,28,28,.15)" stroke-width="1"/>' +
-              '<circle x="240" cy="' + (y + 16) + '" r="2" fill="#B91C1C"/>'
-          }).join('') +
-          '<circle cx="480" cy="' + (Math.max(200, systems.length * 45 + 60) / 2) + '" r="50" fill="rgba(185,28,28,.04)" stroke="#B91C1C" stroke-width="1.5"/>' +
-          '<text x="480" y="' + (Math.max(200, systems.length * 45 + 60) / 2 - 8) + '" text-anchor="middle" fill="#B91C1C" font-size="7" font-weight="700">WATCHTOWER</text>' +
-          '<text x="480" y="' + (Math.max(200, systems.length * 45 + 60) / 2 + 4) + '" text-anchor="middle" fill="#B91C1C" font-size="6" letter-spacing="1">ONTOLOGY</text>' +
-          '<text x="480" y="' + (Math.max(200, systems.length * 45 + 60) / 2 + 18) + '" text-anchor="middle" fill="#6B6862" font-size="4">Unified intelligence</text>' +
-          '<line x1="535" y1="' + (Math.max(200, systems.length * 45 + 60) / 2) + '" x2="620" y2="' + (Math.max(200, systems.length * 45 + 60) / 2 - 40) + '" stroke="rgba(214,158,46,.3)" stroke-width="1"/>' +
-          '<line x1="535" y1="' + (Math.max(200, systems.length * 45 + 60) / 2) + '" x2="620" y2="' + (Math.max(200, systems.length * 45 + 60) / 2) + '" stroke="rgba(214,158,46,.3)" stroke-width="1"/>' +
-          '<line x1="535" y1="' + (Math.max(200, systems.length * 45 + 60) / 2) + '" x2="620" y2="' + (Math.max(200, systems.length * 45 + 60) / 2 + 40) + '" stroke="rgba(214,158,46,.3)" stroke-width="1"/>' +
-          '<rect x="625" y="' + (Math.max(200, systems.length * 45 + 60) / 2 - 58) + '" width="160" height="32" rx="2" fill="rgba(214,158,46,.04)" stroke="rgba(214,158,46,.2)" stroke-width=".5"/>' +
-          '<text x="705" y="' + (Math.max(200, systems.length * 45 + 60) / 2 - 38) + '" text-anchor="middle" fill="#D69E2E" font-size="6" font-weight="700">AI AGENTS</text>' +
-          '<rect x="625" y="' + (Math.max(200, systems.length * 45 + 60) / 2 - 16) + '" width="160" height="32" rx="2" fill="rgba(214,158,46,.04)" stroke="rgba(214,158,46,.2)" stroke-width=".5"/>' +
-          '<text x="705" y="' + (Math.max(200, systems.length * 45 + 60) / 2 + 4) + '" text-anchor="middle" fill="#D69E2E" font-size="6" font-weight="700">DASHBOARDS</text>' +
-          '<rect x="625" y="' + (Math.max(200, systems.length * 45 + 60) / 2 + 26) + '" width="160" height="32" rx="2" fill="rgba(214,158,46,.04)" stroke="rgba(214,158,46,.2)" stroke-width=".5"/>' +
-          '<text x="705" y="' + (Math.max(200, systems.length * 45 + 60) / 2 + 46) + '" text-anchor="middle" fill="#D69E2E" font-size="6" font-weight="700">AUTOMATED REPORTS</text>' +
-          '<rect x="820" y="' + (Math.max(200, systems.length * 45 + 60) / 2 - 35) + '" width="140" height="70" rx="3" fill="rgba(214,158,46,.02)" stroke="rgba(214,158,46,.15)" stroke-width="1" stroke-dasharray="4,3"/>' +
-          '<text x="890" y="' + (Math.max(200, systems.length * 45 + 60) / 2 - 12) + '" text-anchor="middle" fill="#D69E2E" font-size="5" font-weight="700">YOUR CUSTOM</text>' +
-          '<text x="890" y="' + (Math.max(200, systems.length * 45 + 60) / 2) + '" text-anchor="middle" fill="#D69E2E" font-size="5" font-weight="700">PRODUCTS</text>' +
-          '<text x="890" y="' + (Math.max(200, systems.length * 45 + 60) / 2 + 14) + '" text-anchor="middle" fill="#6B6862" font-size="4">Built by your Pointman</text>' +
-          '</svg>' +
-          '</div></div>' : '') +
-
-        // ─── INTEGRATION ARCHITECTURE (dark section with visuals) ───
-        '<div style="background:var(--bk);padding:60px 48px">' +
-        '<div style="max-width:1200px;margin:0 auto">' +
-        '<div style="font-family:var(--mono);font-size:8px;letter-spacing:4px;color:var(--or);margin-bottom:16px">INTEGRATION ARCHITECTURE</div>' +
-        '<div style="height:1px;background:rgba(255,255,255,.06);margin-bottom:40px"></div>' +
-        integrations.map(function (opp, i) {
-          return '<div style="margin-bottom:40px;padding-bottom:40px;border-bottom:1px solid rgba(255,255,255,.06)">' +
-            '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;margin-bottom:16px">' +
-            '<div>' +
-            '<svg viewBox="0 0 300 28" xmlns="http://www.w3.org/2000/svg" style="font-family:Share Tech Mono,monospace;width:300px;display:block;margin-bottom:12px" fill="none"><rect x="0" y="4" width="60" height="20" rx="2" fill="rgba(185,28,28,.06)" stroke="rgba(185,28,28,.2)" stroke-width=".5"/><text x="30" y="17" text-anchor="middle" fill="#B91C1C" font-size="5">CURRENT</text><line x1="65" y1="14" x2="100" y2="14" stroke="rgba(185,28,28,.3)" stroke-width="1"/><polygon points="98,11 105,14 98,17" fill="rgba(185,28,28,.4)"/><circle cx="120" cy="14" r="10" fill="rgba(185,28,28,.06)" stroke="#B91C1C" stroke-width="1"/><text x="120" y="17" text-anchor="middle" fill="#B91C1C" font-size="7" font-weight="700">' + (i + 1 < 10 ? "0" : "") + (i + 1) + '</text><line x1="135" y1="14" x2="170" y2="14" stroke="rgba(214,158,46,.3)" stroke-width="1"/><polygon points="168,11 175,14 168,17" fill="rgba(214,158,46,.4)"/><rect x="180" y="4" width="80" height="20" rx="2" fill="rgba(214,158,46,.06)" stroke="rgba(214,158,46,.2)" stroke-width=".5"/><text x="220" y="17" text-anchor="middle" fill="#D69E2E" font-size="5">ONTOLOGY</text></svg>' +
-            '<h3 style="font-family:var(--serif);font-size:clamp(22px,3vw,28px);font-weight:900;letter-spacing:-1px;color:var(--wh);line-height:1.2">' + opp.title + '</h3>' +
-            '</div>' +
-            '<div style="font-family:var(--mono);font-size:11px;color:var(--or);padding:6px 14px;border:1px solid rgba(185,28,28,.3)">' + (opp.impact || 'High Impact') + '</div>' +
-            '</div>' +
-            '<p style="font-family:var(--serif);font-size:16px;line-height:1.7;color:var(--g6);margin-bottom:16px">' + opp.description + '</p>' +
-            (opp.architecture_explanation ? '<div style="background:rgba(185,28,28,.04);padding:20px 24px;border-left:3px solid var(--or)"><div style="font-family:var(--mono);font-size:7px;letter-spacing:3px;color:var(--or);margin-bottom:8px">ARCHITECTURE DETAIL</div><p style="font-family:var(--serif);font-size:14px;line-height:1.7;color:var(--g5)">' + opp.architecture_explanation + '</p></div>' : '') +
-            '</div>'
-        }).join('') +
-        '</div></div>' +
-
-        // ─── RECOMMENDED IMPLEMENTATION (dark cards with SVG) ───
-        (products.length ?
-          '<div style="background:var(--lt);padding:40px 48px"><div style="max-width:1000px;margin:0 auto;text-align:center"><div style="font-family:var(--serif);font-size:clamp(20px,3vw,28px);font-weight:900;color:var(--bk);letter-spacing:-.5px">What Gets Built</div><p style="font-family:var(--serif);font-size:14px;color:var(--g6);margin-top:8px">Custom products deployed on the Watchtower ontology by your embedded Pointman engineer.</p></div></div>' +
-          '<div style="background:var(--bk);padding:40px 24px 60px">' +
+        // ─── PAIN POINTS IDENTIFIED ───
+        (painPoints.length ?
+          '<div style="background:var(--bk);padding:60px 24px">' +
           '<div style="max-width:1400px;margin:0 auto">' +
-          '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:1px;background:rgba(255,255,255,.04)">' +
-          products.map(function (p, i) {
-            return '<div style="background:var(--bk);padding:32px">' +
-              '<svg viewBox="0 0 360 60" xmlns="http://www.w3.org/2000/svg" style="font-family:Share Tech Mono,monospace;width:100%;display:block;margin-bottom:16px" fill="none">' +
-              '<rect width="360" height="60" fill="#0A0A0A"/>' +
-              '<rect x="10" y="10" width="50" height="40" rx="2" fill="rgba(185,28,28,.06)" stroke="rgba(185,28,28,.2)" stroke-width=".5"/>' +
-              '<text x="35" y="28" text-anchor="middle" fill="#B91C1C" font-size="5">DATA</text>' +
-              '<text x="35" y="40" text-anchor="middle" fill="#B91C1C" font-size="5">IN</text>' +
-              '<line x1="65" y1="30" x2="95" y2="30" stroke="rgba(185,28,28,.3)" stroke-width="1"/><polygon points="93,27 100,30 93,33" fill="rgba(185,28,28,.3)"/>' +
-              '<circle cx="118" cy="30" r="16" fill="rgba(185,28,28,.06)" stroke="#B91C1C" stroke-width="1"/>' +
-              '<text x="118" y="27" text-anchor="middle" fill="#B91C1C" font-size="5" font-weight="700">W</text>' +
-              '<text x="118" y="37" text-anchor="middle" fill="#B91C1C" font-size="4">ENGINE</text>' +
-              '<line x1="138" y1="30" x2="168" y2="30" stroke="rgba(214,158,46,.3)" stroke-width="1"/><polygon points="166,27 173,30 166,33" fill="rgba(214,158,46,.3)"/>' +
-              '<rect x="178" y="10" width="80" height="40" rx="2" fill="rgba(214,158,46,.06)" stroke="rgba(214,158,46,.2)" stroke-width=".5"/>' +
-              '<text x="218" y="34" text-anchor="middle" fill="#D69E2E" font-size="6" font-weight="700">' + (p.type || "DEPLOY").toUpperCase() + '</text>' +
-              '<line x1="263" y1="30" x2="280" y2="30" stroke="rgba(214,158,46,.15)" stroke-width="1" stroke-dasharray="3,2"/>' +
-              '<text x="290" y="28" fill="#6B6862" font-size="5">Custom</text>' +
-              '<text x="290" y="38" fill="#6B6862" font-size="5">product</text>' +
-              '</svg>' +
-              '<div style="font-family:var(--mono);font-size:9px;letter-spacing:3px;color:var(--or);margin-bottom:12px">' + (p.type || 'PRODUCT').toUpperCase() + '</div>' +
-              '<h4 style="font-family:var(--serif);font-size:22px;font-weight:900;letter-spacing:-0.5px;color:var(--wh);margin-bottom:10px">' + p.name + '</h4>' +
-              '<p style="font-family:var(--serif);font-size:15px;line-height:1.7;color:var(--g6);margin-bottom:16px">' + p.description + '</p>' +
-              (p.features ? '<div style="margin-top:12px">' + p.features.map(function (f) { return '<div style="font-family:var(--mono);font-size:9px;color:var(--g4);padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="color:var(--or);margin-right:8px">&rarr;</span>' + f + '</div>' }).join('') + '</div>' : '') +
-              (p.build_with ? '<div style="font-family:var(--mono);font-size:8px;color:var(--g5);margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,.06)">BUILT ON: WATCHTOWER ONTOLOGY</div>' : '') +
+          '<div style="font-family:var(--mono);font-size:12px;letter-spacing:5px;color:#fc8181;margin-bottom:20px;text-align:center;font-weight:600">⚠️ PAIN POINTS IDENTIFIED</div>' +
+          '<div style="height:2px;background:rgba(252,129,129,.3);margin-bottom:44px;max-width:200px;margin-left:auto;margin-right:auto"></div>' +
+          '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px">' +
+          painPoints.map(function (p, i) {
+            return '<div style="background:rgba(252,129,129,.06);padding:24px 28px;border-left:4px solid #fc8181">' +
+              '<p style="font-family:var(--serif);font-size:17px;line-height:1.9;color:var(--g3);margin:0">' + p + '</p>' +
               '</div>'
           }).join('') +
           '</div></div></div>' : '') +
 
-        // ─── POINTMAN (visual section) ───
+        // ─── IDENTIFIED SYSTEMS (cards with badges) ───
+        (systems.length ?
+          '<div style="background:var(--lt);padding:60px 48px">' +
+          '<div style="max-width:1200px;margin:0 auto">' +
+          '<div style="font-family:var(--mono);font-size:12px;letter-spacing:4px;color:var(--or);margin-bottom:20px;font-weight:600">IDENTIFIED SYSTEMS</div>' +
+          '<div style="height:2px;background:rgba(185,28,28,.2);margin-bottom:36px"></div>' +
+          '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">' +
+          systems.map(function (sys) {
+            var sysName = sys.system_name || sys;
+            var vendor = sys.vendor || '';
+            var category = sys.category || '';
+            var confidence = sys.confidence || 'inferred';
+            var evidence = sys.evidence || '';
+            var intNotes = sys.integration_notes || '';
+            var confColor = confidence === 'confirmed' ? '#22c55e' : '#f59e0b';
+            var catColors = {
+              'Learning Management System': '#3b82f6', 'Student Information System': '#3b82f6',
+              'Human Resources Information System': '#22c55e', 'Financial Management System': '#22c55e',
+              'Customer Relationship Management': '#a855f7', 'Alumni & Advancement System': '#a855f7',
+              'Analytics & Business Intelligence': '#6b7280', 'Identity & Access Management': '#6b7280'
+            };
+            var catColor = catColors[category] || '#6b7280';
+            return '<div style="background:var(--wh);padding:24px;border:1px solid rgba(10,10,10,.08)">' +
+              '<div style="font-family:var(--serif);font-size:18px;font-weight:700;color:var(--bk);margin-bottom:8px">' + sysName + '</div>' +
+              (vendor ? '<div style="font-family:var(--mono);font-size:11px;color:var(--g4);margin-bottom:12px">' + vendor + '</div>' : '') +
+              '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">' +
+              (category ? '<span style="font-family:var(--mono);font-size:9px;padding:4px 8px;background:' + catColor + ';color:#fff">' + category + '</span>' : '') +
+              '<span style="font-family:var(--mono);font-size:9px;padding:4px 8px;background:' + confColor + ';color:#fff">' + confidence.toUpperCase() + '</span>' +
+              '</div>' +
+              (evidence ? '<p style="font-family:var(--serif);font-size:14px;line-height:1.7;color:var(--g5);font-style:italic;margin-bottom:8px">' + evidence + '</p>' : '') +
+              (intNotes ? '<div style="font-family:var(--mono);font-size:10px;color:var(--g4);padding-top:8px;border-top:1px solid rgba(10,10,10,.06)">Integration: ' + intNotes + '</div>' : '') +
+              '</div>'
+          }).join('') +
+          '</div>' +
+          (itLeadership ? '<div style="margin-top:24px;font-family:var(--mono);font-size:11px;color:var(--g4)">IT Leadership: ' + itLeadership + '</div>' : '') +
+          (dataGovNotes ? '<div style="margin-top:8px;font-family:var(--mono);font-size:11px;color:var(--g4)">Data Governance: ' + dataGovNotes + '</div>' : '') +
+          '</div></div>' : '') +
+
+        // ─── ACTIVE GRANTS & PROGRAMS ───
+        (grants.length ?
+          '<div style="background:var(--lt);padding:60px 48px">' +
+          '<div style="max-width:1200px;margin:0 auto">' +
+          '<div style="font-family:var(--mono);font-size:12px;letter-spacing:4px;color:var(--or);margin-bottom:20px;font-weight:600">ACTIVE GRANTS & PROGRAMS</div>' +
+          '<div style="height:2px;background:rgba(185,28,28,.2);margin-bottom:36px"></div>' +
+          '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:20px">' +
+          grants.map(function (g) {
+            var grantTypeColors = { 'Federal Grant': '#3b82f6', 'State Grant': '#14b8a6', 'Foundation/Private Grant': '#a855f7', 'Corporate Partnership': '#22c55e' };
+            var gtColor = grantTypeColors[g.program_type] || '#6b7280';
+            return '<div style="background:var(--wh);padding:28px;border:1px solid rgba(10,10,10,.08)">' +
+              '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap;gap:8px">' +
+              '<div style="font-family:var(--serif);font-size:18px;font-weight:700;color:var(--bk)">' + (g.program_name || '') + '</div>' +
+              (g.program_type ? '<span style="font-family:var(--mono);font-size:9px;padding:4px 10px;background:' + gtColor + ';color:#fff">' + g.program_type + '</span>' : '') +
+              '</div>' +
+              (g.focus_area ? '<div style="font-family:var(--mono);font-size:10px;color:var(--or);margin-bottom:12px">' + g.focus_area + '</div>' : '') +
+              (g.funding_amount ? '<div style="font-family:var(--serif);font-size:22px;font-weight:700;color:var(--or);margin-bottom:8px">' + g.funding_amount + '</div>' : '') +
+              (g.time_period ? '<div style="font-family:var(--mono);font-size:10px;color:var(--g4);margin-bottom:12px">' + g.time_period + '</div>' : '') +
+              (g.description ? '<p style="font-family:var(--serif);font-size:15px;line-height:1.8;color:var(--g5);margin-bottom:16px">' + g.description + '</p>' : '') +
+              (g.data_implications ? '<div style="background:rgba(185,28,28,.04);padding:16px;border-left:3px solid var(--or)"><div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--or);margin-bottom:6px">DATA IMPLICATIONS</div><p style="font-family:var(--serif);font-size:14px;line-height:1.7;color:var(--g5);margin:0">' + g.data_implications + '</p></div>' : '') +
+              (g.source_url ? '<a href="' + g.source_url + '" target="_blank" style="font-family:var(--mono);font-size:10px;color:var(--or);margin-top:12px;display:inline-block">View source →</a>' : '') +
+              '</div>'
+          }).join('') +
+          '</div></div></div>' : '') +
+
+        // ─── DATA SILOS (sorted by priority_score) ───
+        (dataSilos.length ?
+          '<div style="background:var(--bk);padding:60px 48px">' +
+          '<div style="max-width:1200px;margin:0 auto">' +
+          '<div style="font-family:var(--mono);font-size:12px;letter-spacing:4px;color:var(--or);margin-bottom:8px;font-weight:600">DATA SILOS</div>' +
+          (integrationHealth ? '<p style="font-family:var(--serif);font-size:15px;color:var(--g4);margin-bottom:24px">' + integrationHealth + '</p>' : '<div style="margin-bottom:24px"></div>') +
+          '<div style="display:grid;gap:16px">' +
+          dataSilos.sort(function (a, b) { return (b.priority_score || 0) - (a.priority_score || 0); }).map(function (silo) {
+            var statusColors = { isolated: '#ef4444', partially_integrated: '#f59e0b', well_integrated: '#22c55e' };
+            var statusColor = statusColors[silo.integration_status] || '#6b7280';
+            var priorityPct = ((silo.priority_score || 5) / 10 * 100);
+            return '<div style="background:rgba(255,255,255,.03);padding:24px;border:1px solid rgba(255,255,255,.06)">' +
+              '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:12px">' +
+              '<div style="font-family:var(--serif);font-size:18px;font-weight:700;color:var(--wh)">' + (silo.silo_name || '') + '</div>' +
+              '<div style="display:flex;gap:8px;align-items:center">' +
+              '<span style="font-family:var(--mono);font-size:9px;padding:4px 8px;background:' + statusColor + ';color:#fff">' + (silo.integration_status || '').replace('_', ' ').toUpperCase() + '</span>' +
+              '<div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--or)">' + (silo.priority_score || 5) + '/10</div>' +
+              '</div></div>' +
+              '<div style="height:4px;background:rgba(255,255,255,.1);margin-bottom:12px"><div style="height:100%;background:var(--or);width:' + priorityPct + '%"></div></div>' +
+              (silo.data_types && silo.data_types.length ? '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">' + silo.data_types.map(function (dt) { return '<span style="font-family:var(--mono);font-size:9px;padding:3px 8px;background:rgba(255,255,255,.06);color:var(--g3)">' + dt + '</span>'; }).join('') + '</div>' : '') +
+              (silo.integration_barriers && silo.integration_barriers.length ? '<div style="font-family:var(--mono);font-size:10px;color:#fc8181;margin-top:8px">Barriers: ' + silo.integration_barriers.join(' • ') + '</div>' : '') +
+              '</div>'
+          }).join('') +
+          '</div></div></div>' : '') +
+
+        // ─── INTEGRATION OPPORTUNITIES ───
         '<div style="background:var(--lt);padding:60px 48px">' +
-        '<div style="max-width:1000px;margin:0 auto">' +
-        '<div style="font-family:var(--mono);font-size:8px;letter-spacing:4px;color:var(--or);margin-bottom:16px">DELIVERY MODEL</div>' +
-        '<div style="height:1px;background:rgba(10,10,10,.1);margin-bottom:32px"></div>' +
-        '<svg viewBox="0 0 800 120" xmlns="http://www.w3.org/2000/svg" style="font-family:Share Tech Mono,monospace;width:100%;display:block;margin-bottom:24px" fill="none">' +
-        '<rect width="800" height="120" rx="4" fill="#FAFAF8" stroke="rgba(10,10,10,.06)" stroke-width="1"/>' +
-        '<rect x="20" y="20" width="180" height="80" rx="3" fill="rgba(10,10,10,.02)" stroke="rgba(10,10,10,.08)" stroke-width="1"/>' +
-        '<text x="110" y="48" text-anchor="middle" fill="#0A0A0A" font-size="7" font-weight="700">YOUR TEAM</text>' +
-        '<text x="110" y="64" text-anchor="middle" fill="#6B6862" font-size="5">Context &amp; priorities</text>' +
-        '<text x="110" y="78" text-anchor="middle" fill="#6B6862" font-size="5">Domain expertise</text>' +
-        '<line x1="205" y1="60" x2="280" y2="60" stroke="rgba(185,28,28,.3)" stroke-width="1.5"/><polygon points="278,56 286,60 278,64" fill="#B91C1C"/>' +
-        '<rect x="290" y="15" width="220" height="90" rx="3" fill="rgba(185,28,28,.04)" stroke="#B91C1C" stroke-width="1.5"/>' +
-        '<text x="400" y="42" text-anchor="middle" fill="#B91C1C" font-size="8" font-weight="700">POINTMAN</text>' +
-        '<text x="400" y="58" text-anchor="middle" fill="#B91C1C" font-size="5">Embedded software engineer</text>' +
-        '<text x="400" y="74" text-anchor="middle" fill="#6B6862" font-size="5">Builds your tools, agents, workflows</text>' +
-        '<text x="400" y="88" text-anchor="middle" fill="#6B6862" font-size="5">Ships continuously</text>' +
-        '<line x1="515" y1="60" x2="580" y2="60" stroke="rgba(214,158,46,.3)" stroke-width="1.5"/><polygon points="578,56 586,60 578,64" fill="#D69E2E"/>' +
-        '<rect x="590" y="20" width="180" height="80" rx="3" fill="rgba(214,158,46,.04)" stroke="rgba(214,158,46,.2)" stroke-width="1"/>' +
-        '<text x="680" y="48" text-anchor="middle" fill="#D69E2E" font-size="7" font-weight="700">SYMIA PLATFORM</text>' +
-        '<text x="680" y="64" text-anchor="middle" fill="#6B6862" font-size="5">Watchtower ontology</text>' +
-        '<text x="680" y="78" text-anchor="middle" fill="#6B6862" font-size="5">Full stack &amp; open APIs</text>' +
-        '</svg>' +
-        '<p style="font-family:var(--serif);font-size:16px;line-height:1.7;color:var(--g2)">Every deployment includes an embedded Symia engineer &mdash; the Pointman &mdash; who becomes part of your team. Not on a support ticket queue. In your Slack, attending your standups, learning your context, shipping custom products continuously.</p>' +
+        '<div style="max-width:1200px;margin:0 auto">' +
+        '<div style="font-family:var(--mono);font-size:12px;letter-spacing:4px;color:var(--or);margin-bottom:20px;font-weight:600">INTEGRATION OPPORTUNITIES</div>' +
+        '<div style="height:2px;background:rgba(185,28,28,.2);margin-bottom:36px"></div>' +
+        opportunities.map(function (opp, i) {
+          var complexityColors = { low: '#22c55e', medium: '#f59e0b', high: '#ef4444' };
+          var compColor = complexityColors[opp.complexity] || '#6b7280';
+          return '<div style="margin-bottom:32px;padding:28px;background:var(--wh);border:1px solid rgba(10,10,10,.08)">' +
+            '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px">' +
+            '<div style="flex:1">' +
+            '<h3 style="font-family:var(--serif);font-size:22px;font-weight:900;color:var(--bk);margin:0 0 8px">' + (opp.opportunity_title || '') + '</h3>' +
+            (opp.systems_involved && opp.systems_involved.length ? '<div style="display:flex;gap:6px;flex-wrap:wrap">' + opp.systems_involved.map(function (s) { return '<span style="font-family:var(--mono);font-size:9px;padding:3px 8px;background:var(--or);color:#fff">' + s + '</span>'; }).join('') + '</div>' : '') +
+            '</div>' +
+            '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+            (opp.quick_win ? '<span style="font-family:var(--mono);font-size:10px;padding:6px 12px;background:#22c55e;color:#fff;font-weight:700">⚡ QUICK WIN</span>' : '') +
+            '<span style="font-family:var(--mono);font-size:10px;padding:6px 12px;background:' + compColor + ';color:#fff">' + (opp.complexity || 'medium').toUpperCase() + '</span>' +
+            '</div></div>' +
+            (opp.data_flows ? '<p style="font-family:var(--serif);font-size:15px;line-height:1.8;color:var(--g5);margin-bottom:16px">' + opp.data_flows + '</p>' : '') +
+            (opp.business_value ? '<div style="background:rgba(34,197,94,.06);padding:20px;border-left:4px solid #22c55e;margin-bottom:16px"><div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;color:#22c55e;margin-bottom:8px;font-weight:600">BUSINESS VALUE</div><p style="font-family:var(--serif);font-size:16px;line-height:1.8;color:var(--g5);margin:0">' + opp.business_value + '</p></div>' : '') +
+            (opp.success_metrics && opp.success_metrics.length ? '<div style="font-family:var(--mono);font-size:10px;color:var(--g4)">Success Metrics: ' + opp.success_metrics.join(' • ') + '</div>' : '') +
+            '</div>'
+        }).join('') +
         '</div></div>' +
 
-        // ─── CTA (Wire-style closer) ───
+        // ─── IMMEDIATE ACTIONS & ROADMAP ───
+        '<div style="background:var(--bk);padding:60px 48px">' +
+        '<div style="max-width:1200px;margin:0 auto">' +
+        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:32px">' +
+        // Immediate Actions
+        '<div>' +
+        '<div style="font-family:var(--mono);font-size:12px;letter-spacing:4px;color:#f59e0b;margin-bottom:20px;font-weight:600">⚡ IMMEDIATE ACTIONS</div>' +
+        '<div style="display:grid;gap:12px">' +
+        immediateActions.map(function (action, i) {
+          return '<div style="background:rgba(245,158,11,.06);padding:16px 20px;border-left:3px solid #f59e0b">' +
+            '<span style="font-family:var(--mono);font-size:10px;color:#f59e0b;margin-right:8px">' + (i + 1) + '.</span>' +
+            '<span style="font-family:var(--serif);font-size:15px;color:var(--g3)">' + action + '</span>' +
+            '</div>'
+        }).join('') +
+        '</div></div>' +
+        // Short-term Roadmap
+        '<div>' +
+        '<div style="font-family:var(--mono);font-size:12px;letter-spacing:4px;color:#22c55e;margin-bottom:20px;font-weight:600">📅 SHORT-TERM ROADMAP</div>' +
+        '<div style="display:grid;gap:12px">' +
+        shortTermRoadmap.map(function (item, i) {
+          return '<div style="background:rgba(34,197,94,.06);padding:16px 20px;border-left:3px solid #22c55e">' +
+            '<span style="font-family:var(--mono);font-size:10px;color:#22c55e;margin-right:8px">' + (i + 1) + '.</span>' +
+            '<span style="font-family:var(--serif);font-size:15px;color:var(--g3)">' + item + '</span>' +
+            '</div>'
+        }).join('') +
+        '</div></div>' +
+        '</div>' +
+        // Long-term Vision
+        (longTermVision ? '<div style="margin-top:40px;padding:32px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08)"><div style="font-family:var(--mono);font-size:10px;letter-spacing:3px;color:var(--or);margin-bottom:12px;font-weight:600">LONG-TERM VISION</div><p style="font-family:var(--serif);font-size:18px;line-height:1.9;color:var(--g3);margin:0;font-style:italic">' + longTermVision + '</p></div>' : '') +
+        '</div></div>' +
+
+        // ─── KEY RISKS ───
+        (keyRisks.length ?
+          '<div style="background:var(--lt);padding:60px 48px">' +
+          '<div style="max-width:1200px;margin:0 auto">' +
+          '<div style="font-family:var(--mono);font-size:12px;letter-spacing:4px;color:#ef4444;margin-bottom:20px;font-weight:600">⚠️ KEY RISKS</div>' +
+          '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">' +
+          keyRisks.map(function (risk) {
+            return '<div style="background:#fef2f2;padding:20px;border-left:3px solid #ef4444"><p style="font-family:var(--serif);font-size:15px;line-height:1.7;color:var(--g5);margin:0">' + risk + '</p></div>'
+          }).join('') +
+          '</div></div></div>' : '') +
+
+        // ─── WATCHTOWER FIT (Sales Highlight) ───
+        (watchtowerFit ?
+          '<div style="background:linear-gradient(135deg,#0a0a0a 0%,#1a0a0a 100%);padding:60px 48px">' +
+          '<div style="max-width:1000px;margin:0 auto">' +
+          '<div style="font-family:var(--mono);font-size:12px;letter-spacing:4px;color:var(--or);margin-bottom:20px;font-weight:600;text-align:center">🎯 WHY SYMIA WATCHTOWER</div>' +
+          '<div style="height:2px;background:var(--or);margin-bottom:36px;max-width:200px;margin-left:auto;margin-right:auto"></div>' +
+          '<p style="font-family:var(--serif);font-size:20px;line-height:2;color:var(--g3);text-align:center">' + watchtowerFit + '</p>' +
+          '</div></div>' : '') +
+
+        // ─── ESTIMATED ROI FACTORS ───
+        (roiFactors.length ?
+          '<div style="background:var(--lt);padding:60px 48px">' +
+          '<div style="max-width:1000px;margin:0 auto">' +
+          '<div style="font-family:var(--mono);font-size:12px;letter-spacing:4px;color:var(--or);margin-bottom:20px;font-weight:600;text-align:center">💰 ESTIMATED ROI FACTORS</div>' +
+          '<div style="display:grid;gap:12px">' +
+          roiFactors.map(function (factor) {
+            return '<div style="background:var(--wh);padding:20px 24px;border:1px solid rgba(10,10,10,.08);display:flex;align-items:center;gap:12px"><span style="color:#22c55e;font-size:18px">✓</span><span style="font-family:var(--serif);font-size:16px;color:var(--g5)">' + factor + '</span></div>'
+          }).join('') +
+          '</div></div></div>' : '') +
+
+        // ─── CTA ───
         '<div style="background:var(--bk);padding:48px;text-align:center">' +
         '<div style="max-width:800px;margin:0 auto">' +
-        '<div style="font-family:var(--mono);font-size:8px;letter-spacing:4px;color:var(--or);margin-bottom:20px">NEXT STEPS</div>' +
-        '<h3 style="font-family:var(--serif);font-size:clamp(24px,4vw,36px);font-weight:900;color:var(--wh);letter-spacing:-1px;margin-bottom:16px">Ready to Deploy <em style="color:var(--or);font-style:italic">Watchtower?</em></h3>' +
-        '<p style="font-family:var(--serif);font-size:15px;color:var(--g6);line-height:1.7;margin-bottom:32px">This brief was generated from publicly available data. A full implementation analysis with your internal systems access reveals 10x more opportunity.</p>' +
+        '<div style="font-family:var(--mono);font-size:12px;letter-spacing:4px;color:var(--or);margin-bottom:24px;font-weight:600">NEXT STEPS</div>' +
+        '<h3 style="font-family:var(--serif);font-size:clamp(28px,4vw,42px);font-weight:900;color:var(--wh);letter-spacing:-1px;margin-bottom:20px">Ready to Deploy <em style="color:var(--or);font-style:italic">Watchtower?</em></h3>' +
+        '<p style="font-family:var(--serif);font-size:18px;color:var(--g4);line-height:1.9;margin-bottom:36px">This brief was generated from publicly available data. A full implementation analysis with your internal systems access reveals 10x more opportunity.</p>' +
         '<a style="font-family:var(--mono);font-size:10px;letter-spacing:4px;text-transform:uppercase;padding:16px 48px;background:var(--or);color:var(--wh);display:inline-block;cursor:pointer;text-decoration:none;margin-right:12px" onclick="var ps=document.querySelectorAll(\'.page\');for(var i=0;i<ps.length;i++)ps[i].classList.remove(\'active\');var t=document.getElementById(\'p-contact\');if(t)t.classList.add(\'active\');window.scrollTo(0,0);">Request Full Briefing</a>' +
         '<a style="font-family:var(--mono);font-size:10px;letter-spacing:4px;text-transform:uppercase;padding:16px 48px;background:transparent;color:var(--g4);display:inline-block;cursor:pointer;text-decoration:none;border:1px solid rgba(255,255,255,.15);margin-top:12px" onclick="resetBrief();document.getElementById(\'intel-brief-section\').scrollIntoView({behavior:\'smooth\'});">Generate New Brief</a>' +
         '</div></div>';
@@ -18087,8 +18176,8 @@
 
         var data = await response.json();
 
-        if (!data.success || !data.brief) {
-          throw new Error('Invalid response from API');
+        if (!data.success) {
+          throw new Error(data.detail || 'Invalid response from API');
         }
 
         // Complete progress
@@ -18097,72 +18186,9 @@
         completedSteps.push('<span style="color:#68d391">✓</span> Intelligence brief ready!');
         stepsEl.innerHTML = completedSteps.join('<br>');
 
-        // Map API response to renderBrief expected format
-        var brief = data.brief;
-        var mappedBrief = {
-          organization_name: brief.organization_name || 'Organization',
-          org_name: brief.organization_name || 'Organization',
-          org_type: 'workforce',
-          executive_summary: brief.mission_statement || '',
-          pain_context: painInput ? '<div style="background:rgba(252,129,129,.04);padding:24px;border-left:3px solid #fc8181;margin-bottom:32px"><div style="font-family:var(--mono);font-size:8px;letter-spacing:3px;color:#fc8181;margin-bottom:8px">YOUR STATED CHALLENGE</div><p style="font-family:var(--serif);font-size:16px;line-height:1.7;color:var(--g6);font-style:italic">"' + painInput + '"</p></div>' : '',
-          current_challenges: brief.data_silos || [],
-          detected_systems: brief.data_silos || [],
-          integration_opportunities: (brief.integration_opportunities || []).map(function (opp, i) {
-            // Parse the integration opportunity string into structured format
-            var parts = opp.split(':');
-            var title = parts[0] ? parts[0].trim() : 'Integration Opportunity ' + (i + 1);
-            var description = parts.length > 1 ? parts.slice(1).join(':').trim() : opp;
-            return {
-              title: title,
-              description: description,
-              impact: 'High Impact',
-              architecture_explanation: 'Watchtower ingests data from existing systems, normalizes it into the unified ontology, and enables real-time intelligence queries across the entire data landscape.'
-            };
-          }),
-          recommended_products: [
-            {
-              type: 'dashboard',
-              name: 'Unified Intelligence Dashboard',
-              product: 'Unified Intelligence Dashboard',
-              description: 'Real-time visualization of all workforce data streams unified through the Watchtower ontology.',
-              features: ['Cross-system data correlation', 'Real-time outcome tracking', 'Custom reporting automation'],
-              build_with: 'REST API + React Components'
-            },
-            {
-              type: 'agent',
-              name: 'Compliance Automation Agent',
-              product: 'Compliance Automation Agent',
-              description: 'AI agent that continuously monitors data quality, validates compliance requirements, and generates reports.',
-              features: ['Automated compliance checks', 'Proactive risk alerting', 'Audit-ready documentation'],
-              build_with: 'Python SDK + Watchtower Agents'
-            }
-          ],
-          watchtower_objects: [
-            'Students: enrollment, progress, outcomes',
-            'Programs: credentials, competencies, requirements',
-            'Providers: performance, capacity, compliance',
-            'Employers: demand, placements, satisfaction',
-            'Outcomes: employment, wages, retention'
-          ],
-          estimated_roi: '4.2',
-          estimated_hours_saved: '120',
-          data_systems_likely: brief.data_silos || [],
-          key_automations: brief.integration_opportunities || []
-        };
-
-        // Add Watchtower strategy as an additional integration opportunity if present
-        if (brief.watchtower_strategy) {
-          mappedBrief.integration_opportunities.push({
-            title: 'Watchtower Strategy',
-            description: brief.watchtower_strategy,
-            impact: 'Strategic',
-            architecture_explanation: 'This strategy recommendation is generated based on analysis of the organization\'s public-facing information and identified data integration patterns.'
-          });
-        }
-
-        // Delay briefly to show completion, then render
+        // Delay briefly to show completion, then render with new API structure
         setTimeout(function () {
-          renderBrief(mappedBrief, urlInput);
+          renderBrief(data, urlInput);
         }, 500);
 
       } catch (error) {
