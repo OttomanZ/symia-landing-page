@@ -17914,7 +17914,11 @@
               'Learning Management System': '#3b82f6', 'Student Information System': '#3b82f6',
               'Human Resources Information System': '#22c55e', 'Financial Management System': '#22c55e',
               'Customer Relationship Management': '#a855f7', 'Alumni & Advancement System': '#a855f7',
-              'Analytics & Business Intelligence': '#6b7280', 'Identity & Access Management': '#6b7280'
+              'Analytics & Business Intelligence': '#6b7280', 'Identity & Access Management': '#6b7280',
+              'Enterprise Resource Planning': '#10b981', 'Research Administration System': '#8b5cf6',
+              'Facilities Management System': '#64748b', 'Library Management System': '#0ea5e9',
+              'Communication & Collaboration': '#14b8a6', 'Assessment & Testing Platform': '#f97316',
+              'Academic Advising System': '#ec4899', 'Other System': '#6b7280'
             };
             var catColor = catColors[category] || '#6b7280';
             return '<div style="background:var(--wh);padding:24px;border:1px solid rgba(10,10,10,.08)">' +
@@ -17941,7 +17945,7 @@
           '<div style="height:2px;background:rgba(185,28,28,.2);margin-bottom:36px"></div>' +
           '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:20px">' +
           grants.map(function (g) {
-            var grantTypeColors = { 'Federal Grant': '#3b82f6', 'State Grant': '#14b8a6', 'Foundation/Private Grant': '#a855f7', 'Corporate Partnership': '#22c55e' };
+            var grantTypeColors = { 'Federal Grant': '#3b82f6', 'State Grant': '#14b8a6', 'Foundation/Private Grant': '#a855f7', 'Corporate Partnership': '#22c55e', 'Internal Initiative': '#6366f1', 'Consortium/Collaborative': '#f59e0b' };
             var gtColor = grantTypeColors[g.program_type] || '#6b7280';
             return '<div style="background:var(--wh);padding:28px;border:1px solid rgba(10,10,10,.08)">' +
               '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap;gap:8px">' +
@@ -18156,7 +18160,7 @@
 
       try {
         // Make API call
-        var response = await fetch('https://niyolabs-analytics.docwyn.com/symia/analyze-organization', {
+        var response = await fetch('https://docwyn--symia-intelligence-fastapi-app.modal.run/symia/analyze-organization', {
           method: 'POST',
           headers: {
             'accept': 'application/json',
