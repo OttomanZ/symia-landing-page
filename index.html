@@ -18185,6 +18185,46 @@
       var progressEl = document.getElementById('ib-progress');
       var stepsEl = document.getElementById('ib-steps');
 
+      // Timer variables
+      var startTime = Date.now();
+      var timerInterval;
+
+      function formatTime(ms) {
+        var totalSeconds = Math.floor(ms / 1000);
+        var minutes = Math.floor(totalSeconds / 60);
+        var seconds = totalSeconds % 60;
+        if (minutes > 0) {
+          return minutes + 'm ' + seconds + 's';
+        }
+        return seconds + 's';
+      }
+
+      function updateTimer() {
+        var elapsed = Date.now() - startTime;
+        var timerEl = document.getElementById('ib-timer');
+        if (timerEl) {
+          timerEl.textContent = formatTime(elapsed);
+        }
+      }
+
+      // Create timer display if not exists
+      if (!document.getElementById('ib-timer')) {
+        var timerContainer = document.createElement('div');
+        timerContainer.innerHTML = '<div style="font-family:var(--mono);font-size:14px;color:var(--g4);margin-top:16px;text-align:center">Elapsed: <span id="ib-timer" style="color:var(--or);font-weight:700">0s</span></div>';
+        var loadingEl = document.getElementById('ib-loading');
+        var progressBar = loadingEl.querySelector('[style*="height:4px"]') || loadingEl.querySelector('div > div');
+        if (progressBar && progressBar.parentNode) {
+          progressBar.parentNode.insertAdjacentElement('afterend', timerContainer);
+        } else {
+          loadingEl.appendChild(timerContainer);
+        }
+      } else {
+        document.getElementById('ib-timer').textContent = '0s';
+      }
+
+      // Start timer
+      timerInterval = setInterval(updateTimer, 1000);
+
       // Loading animation steps
       var steps = [
         { text: 'Connecting to organization website...', progress: 10 },
@@ -18231,6 +18271,7 @@
         });
 
         clearInterval(stepInterval);
+        clearInterval(timerInterval);
 
         if (!response.ok) {
           throw new Error('API request failed with status ' + response.status);
@@ -18243,9 +18284,10 @@
         }
 
         // Complete progress
+        var totalTime = formatTime(Date.now() - startTime);
         progressEl.style.width = '100%';
         statusEl.textContent = 'Intelligence brief ready!';
-        completedSteps.push('<span style="color:#68d391">✓</span> Intelligence brief ready!');
+        completedSteps.push('<span style="color:#68d391">✓</span> Completed in ' + totalTime);
         stepsEl.innerHTML = completedSteps.join('<br>');
 
         // Delay briefly to show completion, then render with new API structure
@@ -18255,6 +18297,7 @@
 
       } catch (error) {
         clearInterval(stepInterval);
+        clearInterval(timerInterval);
         console.error('Brief generation error:', error);
 
         // Show error state
