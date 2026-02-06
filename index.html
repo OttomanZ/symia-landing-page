@@ -3502,7 +3502,7 @@
         <!-- INPUT FORM -->
         <div id="ib-input" style="max-width:960px;margin:0 auto">
           <div style="margin-bottom:20px">
-            <input type="text" id="ib-url" placeholder="https://your-organization.edu"
+            <input type="text" id="ib-url" placeholder="Enter URL, domain, or organization name..."
               style="width:100%;padding:24px 32px;background:rgba(255,255,255,.04);color:var(--wh);border:2px solid rgba(185,28,28,.25);font-family:var(--mono);font-size:20px;letter-spacing:1px;outline:none;box-sizing:border-box;transition:border-color .3s"
               onfocus="this.style.borderColor='#B91C1C'" onblur="this.style.borderColor='rgba(185,28,28,.25)'">
           </div>
@@ -17854,6 +17854,21 @@
       var watchtowerFit = ib.watchtower_fit || '';
       var roiFactors = ib.estimated_roi_factors || [];
       var changeNotes = ib.change_management_notes || '';
+      var recommendedAgents = ib.recommended_custom_agents || [];
+      var recommendedDashboards = ib.recommended_dashboards || [];
+      var fraudOpportunities = ib.fraud_detection_opportunities || [];
+
+      // Helper to parse "Name: Description" format
+      function parseColonFormat(item) {
+        var colonIndex = item.indexOf(':');
+        if (colonIndex === -1) {
+          return { name: item, description: '' };
+        }
+        return {
+          name: item.substring(0, colonIndex).trim(),
+          description: item.substring(colonIndex + 1).trim()
+        };
+      }
 
       // ─── HEADER (org info) ───
       var maturityColors = { emerging: '#ef4444', developing: '#f59e0b', established: '#84cc16', advanced: '#22c55e' };
@@ -18074,6 +18089,54 @@
           }).join('') +
           '</div></div></div>' : '') +
 
+        // ─── RECOMMENDED CUSTOM AGENTS ───
+        (recommendedAgents.length ?
+          '<div style="background:var(--bk);padding:60px 48px">' +
+          '<div style="max-width:1200px;margin:0 auto">' +
+          '<div style="font-family:var(--mono);font-size:12px;letter-spacing:4px;color:#a855f7;margin-bottom:20px;font-weight:600">🤖 RECOMMENDED CUSTOM AGENTS</div>' +
+          '<div style="height:2px;background:rgba(168,85,247,.3);margin-bottom:36px"></div>' +
+          '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:20px">' +
+          recommendedAgents.map(function (agent) {
+            var parsed = parseColonFormat(agent);
+            return '<div style="background:rgba(168,85,247,.06);padding:24px;border:1px solid rgba(168,85,247,.2);border-left:4px solid #a855f7">' +
+              '<div style="font-family:var(--serif);font-size:18px;font-weight:700;color:var(--wh);margin-bottom:12px">' + parsed.name + '</div>' +
+              (parsed.description ? '<p style="font-family:var(--serif);font-size:15px;line-height:1.8;color:var(--g4);margin:0">' + parsed.description + '</p>' : '') +
+              '</div>'
+          }).join('') +
+          '</div></div></div>' : '') +
+
+        // ─── RECOMMENDED DASHBOARDS ───
+        (recommendedDashboards.length ?
+          '<div style="background:var(--lt);padding:60px 48px">' +
+          '<div style="max-width:1200px;margin:0 auto">' +
+          '<div style="font-family:var(--mono);font-size:12px;letter-spacing:4px;color:#3b82f6;margin-bottom:20px;font-weight:600">📊 RECOMMENDED DASHBOARDS</div>' +
+          '<div style="height:2px;background:rgba(59,130,246,.2);margin-bottom:36px"></div>' +
+          '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:20px">' +
+          recommendedDashboards.map(function (dashboard) {
+            var parsed = parseColonFormat(dashboard);
+            return '<div style="background:var(--wh);padding:24px;border:1px solid rgba(10,10,10,.08);border-left:4px solid #3b82f6">' +
+              '<div style="font-family:var(--serif);font-size:18px;font-weight:700;color:var(--bk);margin-bottom:12px">' + parsed.name + '</div>' +
+              (parsed.description ? '<p style="font-family:var(--serif);font-size:15px;line-height:1.8;color:var(--g5);margin:0">' + parsed.description + '</p>' : '') +
+              '</div>'
+          }).join('') +
+          '</div></div></div>' : '') +
+
+        // ─── FRAUD DETECTION OPPORTUNITIES ───
+        (fraudOpportunities.length ?
+          '<div style="background:var(--bk);padding:60px 48px">' +
+          '<div style="max-width:1200px;margin:0 auto">' +
+          '<div style="font-family:var(--mono);font-size:12px;letter-spacing:4px;color:#f59e0b;margin-bottom:20px;font-weight:600">🛡️ FRAUD DETECTION OPPORTUNITIES</div>' +
+          '<div style="height:2px;background:rgba(245,158,11,.3);margin-bottom:36px"></div>' +
+          '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:20px">' +
+          fraudOpportunities.map(function (opp) {
+            var parsed = parseColonFormat(opp);
+            return '<div style="background:rgba(245,158,11,.06);padding:24px;border:1px solid rgba(245,158,11,.2);border-left:4px solid #f59e0b">' +
+              '<div style="font-family:var(--serif);font-size:18px;font-weight:700;color:var(--wh);margin-bottom:12px">' + parsed.name + '</div>' +
+              (parsed.description ? '<p style="font-family:var(--serif);font-size:15px;line-height:1.8;color:var(--g4);margin:0">' + parsed.description + '</p>' : '') +
+              '</div>'
+          }).join('') +
+          '</div></div></div>' : '') +
+
         // ─── CTA ───
         '<div style="background:var(--bk);padding:48px;text-align:center">' +
         '<div style="max-width:800px;margin:0 auto">' +
@@ -18104,15 +18167,10 @@
       var urlInput = document.getElementById('ib-url').value.trim();
       var painInput = document.getElementById('ib-pain').value.trim();
 
-      // Validate URL
+      // Validate input (accepts URL, domain, or organization name)
       if (!urlInput) {
-        alert('Please enter an organization URL');
+        alert('Please enter an organization URL, domain, or name');
         return;
-      }
-
-      // Ensure URL has protocol
-      if (!urlInput.startsWith('http://') && !urlInput.startsWith('https://')) {
-        urlInput = 'https://' + urlInput;
       }
 
       // Store pain for PDF generation
@@ -18167,7 +18225,7 @@
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            url: urlInput,
+            input: urlInput,
             challenge: painInput || 'How can this organization improve workforce outcomes?'
           })
         });
